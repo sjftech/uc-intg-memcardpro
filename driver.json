@@ -1,0 +1,17 @@
+{
+  "driver_id": "uc_memcardpro",
+  "version": "1.0.0",
+  "min_core_api": "0.20.0",
+  "name": {
+    "en": "MemCard PRO"
+  },
+  "description": {
+    "en": "Display currently playing game and cover art from MemCard PRO devices (PS1, PS2, GameCube)"
+  },
+  "developer": {
+    "name": "Community",
+    "url": "https://github.com/8bitmods/memcard-pro"
+  },
+  "home_page": "https://github.com/8bitmods/memcard-pro",
+  "release_date": "2026-03-01"
+}
