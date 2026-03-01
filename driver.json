@@ -13,5 +13,7 @@
     "url": "https://github.com/8bitmods/memcard-pro"
   },
   "home_page": "https://github.com/8bitmods/memcard-pro",
-  "release_date": "2026-03-01"
+  "release_date": "2026-03-01",
+  "icon": "",
+  "port": 9097
 }

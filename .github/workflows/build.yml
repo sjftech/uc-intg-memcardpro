@@ -16,45 +16,41 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up QEMU for aarch64 emulation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+        run: |
+          sudo apt-get install -y qemu binfmt-support qemu-user-static
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Build with PyInstaller (aarch64)
         run: |
           docker run --rm \
-            --platform=aarch64 \
-            --user=$(id -u):$(id -g) \
+            --platform=linux/arm64 \
             -v "$PWD":/workspace \
             docker.io/unfoldedcircle/r2-pyinstaller:3.11.13 \
             bash -c \
               "cd /workspace && \
-               python -m pip install --user -r requirements.txt && \
-               PYTHON_VERSION=\$(python --version | cut -d' ' -f2 | cut -d. -f1,2) && \
-               PYTHONPATH=~/.local/lib/python\${PYTHON_VERSION}/site-packages:\$PYTHONPATH \
+               python -m pip install -r requirements.txt && \
                pyinstaller --clean --onedir --name intg-memcardpro \
                  --collect-all zeroconf \
                  intg-memcardpro/driver.py"
 
       - name: Package tar.gz
         run: |
+          VERSION=${GITHUB_REF_NAME:-dev}
           mkdir -p artifacts/bin
           cp -r dist/intg-memcardpro/* artifacts/bin/
           mv artifacts/bin/intg-memcardpro artifacts/bin/driver
           cp driver.json artifacts/
-          VERSION=${GITHUB_REF_NAME:-dev}
           tar czvf uc-intg-memcardpro-${VERSION}-aarch64.tar.gz -C artifacts .
-          echo "TARBALL=uc-intg-memcardpro-${VERSION}-aarch64.tar.gz" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: uc-intg-memcardpro-aarch64
-          path: "*.tar.gz"
+          path: "uc-intg-memcardpro-*-aarch64.tar.gz"
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: "*.tar.gz"
+          files: "uc-intg-memcardpro-*-aarch64.tar.gz"
           generate_release_notes: true
