@@ -23,6 +23,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Fix workspace permissions
+        run: chmod -R 777 .
+
       - name: Build with PyInstaller (aarch64)
         run: |
           docker run --rm \
