@@ -48,8 +48,7 @@ COVER_ART_URLS = {
 # Setup
 # ---------------------------------------------------------------------------
 
-driver_path = os.path.dirname(os.path.abspath(__file__))
-api = ucapi.IntegrationAPI(driver_path)
+api = ucapi.IntegrationAPI()
 
 # In-memory config: list of {"id": str, "host": str, "name": str}
 _devices: list[dict] = []
