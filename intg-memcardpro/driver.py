@@ -154,14 +154,14 @@ async def _fetch_device_state(host: str) -> dict | None:
 def _create_entity(device: dict) -> ucapi.MediaPlayer:
     """Build a MediaPlayer entity for a MemCard PRO device."""
     entity_id = _device_id(device["host"])
-    return ucapi.MediaPlayer(
+    return ucapi.media_player.MediaPlayer(
         entity_id,
         {"en": device["name"]},
-        [ucapi.MediaPlayerFeatures.MEDIA_TITLE, ucapi.MediaPlayerFeatures.MEDIA_IMAGE_URL],
+        [ucapi.media_player.Features.MEDIA_TITLE, ucapi.media_player.Features.MEDIA_IMAGE_URL],
         {
-            ucapi.MediaAttr.STATE: ucapi.MediaPlayerStates.STANDBY,
-            ucapi.MediaAttr.MEDIA_TITLE: "",
-            ucapi.MediaAttr.MEDIA_IMAGE_URL: "",
+            ucapi.media_player.Attributes.STATE: ucapi.media_player.States.STANDBY,
+            ucapi.media_player.Attributes.MEDIA_TITLE: "",
+            ucapi.media_player.Attributes.MEDIA_IMAGE_URL: "",
         },
     )
 
@@ -194,7 +194,7 @@ async def _poll_loop() -> None:
             if data is None:
                 api.configured_entities.update_attributes(
                     entity_id,
-                    {ucapi.MediaAttr.STATE: ucapi.MediaPlayerStates.UNAVAILABLE},
+                    {ucapi.media_player.Attributes.STATE: ucapi.media_player.States.UNAVAILABLE},
                 )
                 continue
 
@@ -203,11 +203,11 @@ async def _poll_loop() -> None:
             mode = data.get("currentMode", "")
 
             if not game_name or game_id in IDLE_GAME_IDS:
-                state = ucapi.MediaPlayerStates.ON
+                state = ucapi.media_player.States.ON
                 title = ""
                 art_url = ""
             else:
-                state = ucapi.MediaPlayerStates.PLAYING
+                state = ucapi.media_player.States.PLAYING
                 title = game_name
                 art_url = _cover_art_url(game_id, mode) or ""
 
@@ -219,9 +219,9 @@ async def _poll_loop() -> None:
             api.configured_entities.update_attributes(
                 entity_id,
                 {
-                    ucapi.MediaAttr.STATE: state,
-                    ucapi.MediaAttr.MEDIA_TITLE: title,
-                    ucapi.MediaAttr.MEDIA_IMAGE_URL: art_url,
+                    ucapi.media_player.Attributes.STATE: state,
+                    ucapi.media_player.Attributes.MEDIA_TITLE: title,
+                    ucapi.media_player.Attributes.MEDIA_IMAGE_URL: art_url,
                 },
             )
 
@@ -271,19 +271,19 @@ async def on_subscribe_entities(entity_ids: list[str]):
             game_name = data.get("gameName", "")
             mode = data.get("currentMode", "")
             if not game_name or game_id in IDLE_GAME_IDS:
-                state = ucapi.MediaPlayerStates.ON
+                state = ucapi.media_player.States.ON
                 title = ""
                 art_url = ""
             else:
-                state = ucapi.MediaPlayerStates.PLAYING
+                state = ucapi.media_player.States.PLAYING
                 title = game_name
                 art_url = _cover_art_url(game_id, mode) or ""
             api.configured_entities.update_attributes(
                 entity_id,
                 {
-                    ucapi.MediaAttr.STATE: state,
-                    ucapi.MediaAttr.MEDIA_TITLE: title,
-                    ucapi.MediaAttr.MEDIA_IMAGE_URL: art_url,
+                    ucapi.media_player.Attributes.STATE: state,
+                    ucapi.media_player.Attributes.MEDIA_TITLE: title,
+                    ucapi.media_player.Attributes.MEDIA_IMAGE_URL: art_url,
                 },
             )
 
