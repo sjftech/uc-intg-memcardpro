@@ -294,33 +294,56 @@ async def on_unsubscribe_entities(entity_ids: list[str]):
 
 
 # ---------------------------------------------------------------------------
-# Setup config reading
+# Setup flow
 # ---------------------------------------------------------------------------
 
-def _load_ucapi_config() -> list[dict]:
-    """
-    Read setup data saved by ucapi from the setup_data_schema form.
-    ucapi saves submitted setup values to {UC_CONFIG_HOME}/config.json.
-    Each entry has the field IDs from setup_data_schema as keys.
-    """
-    config_home = os.environ.get("UC_CONFIG_HOME", str(Path.home()))
-    # Try known ucapi config file locations
-    candidates = [
-        Path(config_home) / "config.json",
-        Path(config_home) / "uc-intg-memcardpro" / "config.json",
-        Path(config_home) / "memcardpro_intg" / "config.json",
-    ]
-    for path in candidates:
-        if path.exists():
-            try:
-                with open(path) as f:
-                    data = json.load(f)
-                _LOGGER.info("Loaded ucapi config from %s: %s", path, data)
-                return data if isinstance(data, list) else [data]
-            except Exception as e:
-                _LOGGER.error("Failed to read ucapi config at %s: %s", path, e)
-    _LOGGER.debug("No ucapi config found in: %s", candidates)
-    return []
+async def driver_setup_handler(msg: ucapi.SetupDriver) -> ucapi.SetupAction:
+    """Dispatch driver setup requests."""
+    if isinstance(msg, ucapi.DriverSetupRequest):
+        return await _handle_setup_request(msg)
+    if isinstance(msg, ucapi.UserDataResponse):
+        return await _handle_user_data(msg)
+    return ucapi.SetupError()
+
+
+async def _handle_setup_request(msg: ucapi.DriverSetupRequest) -> ucapi.SetupAction:
+    """Receive setup_data submitted via the setup_data_schema form."""
+    host = msg.setup_data.get("host", "").strip()
+    host = host.removeprefix("https://").removeprefix("http://").strip("/")
+    name = msg.setup_data.get("name", "MemCard PRO").strip() or "MemCard PRO"
+
+    _LOGGER.debug("Setup: host=%s name=%s", host, name)
+
+    if not host:
+        _LOGGER.error("Setup: no host provided")
+        return ucapi.SetupError(ucapi.IntegrationSetupError.NOT_FOUND)
+
+    state = await _fetch_device_state(host)
+    if state is None:
+        _LOGGER.error("Setup: could not connect to %s", host)
+        return ucapi.SetupError(ucapi.IntegrationSetupError.CONNECTION_REFUSED)
+
+    device_id = _device_id(host)
+    device = {"id": device_id, "host": host, "name": name}
+
+    global _devices
+    _devices = [d for d in _devices if d["id"] != device_id]
+    _devices.append(device)
+    _save_config(_devices)
+
+    entity = _create_entity(device)
+    if api.available_entities.contains(entity.id):
+        api.available_entities.remove(entity.id)
+    api.available_entities.add(entity)
+    _LOGGER.info("Setup complete for %s (%s)", host, name)
+
+    return ucapi.SetupComplete()
+
+
+async def _handle_user_data(msg: ucapi.UserDataResponse) -> ucapi.SetupAction:
+    """Handle any additional user data responses (not used in single-step setup)."""
+    _LOGGER.warning("Unexpected UserDataResponse: %s", msg.input_values)
+    return ucapi.SetupError()
 
 
 # ---------------------------------------------------------------------------
@@ -331,19 +354,7 @@ async def main():
     """Start the integration."""
     global _devices
 
-    # Try our own persisted config first, then fall back to ucapi's saved setup data
     _devices = _load_config()
-    if not _devices:
-        raw = _load_ucapi_config()
-        for entry in raw:
-            host = entry.get("host", "").strip()
-            name = entry.get("name", "MemCard PRO").strip() or "MemCard PRO"
-            if host:
-                device_id = _device_id(host)
-                _devices.append({"id": device_id, "host": host, "name": name})
-        if _devices:
-            _save_config(_devices)
-
     _LOGGER.info("Loaded %d configured device(s)", len(_devices))
 
     # Register any already-configured devices as available entities
@@ -353,7 +364,7 @@ async def main():
     loop.create_task(_poll_loop())
 
     # Start the ucapi WebSocket server (blocks until shutdown)
-    await api.init("driver.json")
+    await api.init("driver.json", driver_setup_handler)
 
 
 if __name__ == "__main__":
