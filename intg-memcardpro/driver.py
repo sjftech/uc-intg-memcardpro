@@ -294,84 +294,33 @@ async def on_unsubscribe_entities(entity_ids: list[str]):
 
 
 # ---------------------------------------------------------------------------
-# Setup flow
+# Setup config reading
 # ---------------------------------------------------------------------------
 
-@api.listens_to(ucapi.Events.SETUP_DRIVER)
-async def on_setup_driver(msg, data=None):
-    """Handle the setup flow from the remote UI."""
-
-    # Step 1: initial request — show the input form
-    if isinstance(msg, ucapi.driver.DriverSetupRequest):
-        _LOGGER.debug("Setup flow started")
-        await api.driver_setup_progress(ucapi.IntegrationSetupError.NONE)
-        return ucapi.driver.RequestUserInput(
-            {"en": "Add a MemCard PRO device"},
-            [
-                {
-                    "id": "host",
-                    "label": {"en": "IP Address or Hostname"},
-                    "field": {
-                        "text": {
-                            "value": "",
-                            "placeholder": {"en": "e.g. 192.168.1.100 or memcardpro.local"}
-                        }
-                    },
-                },
-                {
-                    "id": "name",
-                    "label": {"en": "Device Name"},
-                    "field": {
-                        "text": {
-                            "value": "MemCard PRO",
-                            "placeholder": {"en": "e.g. PS2 MemCard PRO"}
-                        }
-                    },
-                },
-            ],
-        )
-
-    # Step 2: user submitted the form
-    if isinstance(msg, ucapi.driver.UserDataResponse):
-        host = msg.input_values.get("host", "").strip()
-        host = host.removeprefix("https://").removeprefix("http://").strip("/")
-        name = msg.input_values.get("name", "").strip() or "MemCard PRO"
-
-        _LOGGER.debug("Setup: host=%s name=%s", host, name)
-
-        if not host:
-            _LOGGER.error("Setup: no host provided")
-            return ucapi.SetupError(ucapi.IntegrationSetupError.NOT_FOUND)
-
-        # Validate the host by fetching it
-        await api.driver_setup_progress(ucapi.IntegrationSetupError.NONE)
-        state = await _fetch_device_state(host)
-
-        if state is None:
-            _LOGGER.error("Setup: could not connect to %s", host)
-            return ucapi.SetupError(ucapi.IntegrationSetupError.CONNECTION_REFUSED)
-
-        # Save the new device
-        device_id = _device_id(host)
-        device = {"id": device_id, "host": host, "name": name}
-
-        # Replace if already exists, otherwise append
-        global _devices
-        _devices = [d for d in _devices if d["id"] != device_id]
-        _devices.append(device)
-        _save_config(_devices)
-
-        # Register the entity
-        entity = _create_entity(device)
-        if api.available_entities.contains(entity.id):
-            api.available_entities.remove(entity.id)
-        api.available_entities.add(entity)
-        _LOGGER.info("Setup complete for %s (%s)", host, name)
-
-        return ucapi.SetupComplete()
-
-    _LOGGER.warning("Unexpected setup message: %s", type(msg))
-    return ucapi.SetupError(ucapi.IntegrationSetupError.OTHER)
+def _load_ucapi_config() -> list[dict]:
+    """
+    Read setup data saved by ucapi from the setup_data_schema form.
+    ucapi saves submitted setup values to {UC_CONFIG_HOME}/config.json.
+    Each entry has the field IDs from setup_data_schema as keys.
+    """
+    config_home = os.environ.get("UC_CONFIG_HOME", str(Path.home()))
+    # Try known ucapi config file locations
+    candidates = [
+        Path(config_home) / "config.json",
+        Path(config_home) / "uc-intg-memcardpro" / "config.json",
+        Path(config_home) / "memcardpro_intg" / "config.json",
+    ]
+    for path in candidates:
+        if path.exists():
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                _LOGGER.info("Loaded ucapi config from %s: %s", path, data)
+                return data if isinstance(data, list) else [data]
+            except Exception as e:
+                _LOGGER.error("Failed to read ucapi config at %s: %s", path, e)
+    _LOGGER.debug("No ucapi config found in: %s", candidates)
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -382,8 +331,19 @@ async def main():
     """Start the integration."""
     global _devices
 
-    # Load persisted config
+    # Try our own persisted config first, then fall back to ucapi's saved setup data
     _devices = _load_config()
+    if not _devices:
+        raw = _load_ucapi_config()
+        for entry in raw:
+            host = entry.get("host", "").strip()
+            name = entry.get("name", "MemCard PRO").strip() or "MemCard PRO"
+            if host:
+                device_id = _device_id(host)
+                _devices.append({"id": device_id, "host": host, "name": name})
+        if _devices:
+            _save_config(_devices)
+
     _LOGGER.info("Loaded %d configured device(s)", len(_devices))
 
     # Register any already-configured devices as available entities
