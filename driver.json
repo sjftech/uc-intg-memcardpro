@@ -1,4 +1,3 @@
-cat << 'EOF'
 {
   "driver_id": "uc-intg-memcardpro",
   "name": { "en": "MemCard PRO" },
@@ -32,42 +31,3 @@ cat << 'EOF'
     ]
   }
 }
-EOF
-Output
-
-{
-  "driver_id": "uc-intg-memcardpro",
-  "name": { "en": "MemCard PRO" },
-  "icon": "uc:gamepad-modern",
-  "description": { "en": "Display currently playing game and cover art from MemCard PRO devices (PS1, PS2, GameCube)" },
-  "version": "1.0.0",
-  "developer": { "name": "Community", "url": "https://github.com/sjftech/uc-intg-memcardpro" },
-  "min_core_api": "0.5.1",
-  "setup_data_schema": {
-    "title": { "en": "MemCard PRO Setup" },
-    "settings": [
-      {
-        "id": "host",
-        "label": { "en": "IP Address or Hostname" },
-        "field": {
-          "text": {
-            "value": "",
-            "placeholder": { "en": "e.g. 192.168.1.100 or memcardpro.local" }
-          }
-        }
-      },
-      {
-        "id": "name",
-        "label": { "en": "Device Name" },
-        "field": {
-          "text": {
-            "value": "MemCard PRO"
-          }
-        }
-      }
-    ]
-  }
-}
-
-
-
