@@ -31,7 +31,7 @@ jobs:
           docker run --rm \
             --platform=linux/arm64 \
             -v "$PWD":/workspace \
-            docker.io/unfoldedcircle/r2-pyinstaller:3.11.13 \
+            docker.io/unfoldedcircle/r2-pyinstaller:3.11.12-0.3.0 \
             bash -c \
               "cd /workspace && \
                python -m pip install -r requirements.txt && \
