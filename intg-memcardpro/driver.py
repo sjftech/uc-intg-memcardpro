@@ -231,32 +231,32 @@ async def _poll_loop() -> None:
 # UCR3 event handlers
 # ---------------------------------------------------------------------------
 
-@api.events.on(ucapi.Events.CONNECT)
+@api.on(ucapi.Events.CONNECT)
 async def on_connect():
     """Remote connected — push current state of all subscribed entities."""
     _LOGGER.info("Remote connected")
     await api.set_device_state(ucapi.DeviceStates.CONNECTED)
 
 
-@api.events.on(ucapi.Events.DISCONNECT)
+@api.on(ucapi.Events.DISCONNECT)
 async def on_disconnect():
     """Remote disconnected."""
     _LOGGER.info("Remote disconnected")
 
 
-@api.events.on(ucapi.Events.ENTER_STANDBY)
+@api.on(ucapi.Events.ENTER_STANDBY)
 async def on_enter_standby():
     """Remote going to standby — nothing special needed for read-only integration."""
     _LOGGER.debug("Remote entering standby")
 
 
-@api.events.on(ucapi.Events.EXIT_STANDBY)
+@api.on(ucapi.Events.EXIT_STANDBY)
 async def on_exit_standby():
     """Remote waking from standby — state will catch up on next poll."""
     _LOGGER.debug("Remote exiting standby")
 
 
-@api.events.on(ucapi.Events.SUBSCRIBE_ENTITIES)
+@api.on(ucapi.Events.SUBSCRIBE_ENTITIES)
 async def on_subscribe_entities(entity_ids: list[str]):
     """Remote subscribed to entities — push immediate state."""
     _LOGGER.info("Subscribe entities: %s", entity_ids)
@@ -287,7 +287,7 @@ async def on_subscribe_entities(entity_ids: list[str]):
             )
 
 
-@api.events.on(ucapi.Events.UNSUBSCRIBE_ENTITIES)
+@api.on(ucapi.Events.UNSUBSCRIBE_ENTITIES)
 async def on_unsubscribe_entities(entity_ids: list[str]):
     _LOGGER.info("Unsubscribe entities: %s", entity_ids)
 
@@ -296,7 +296,7 @@ async def on_unsubscribe_entities(entity_ids: list[str]):
 # Setup flow
 # ---------------------------------------------------------------------------
 
-@api.events.on(ucapi.Events.SETUP_DRIVER)
+@api.on(ucapi.Events.SETUP_DRIVER)
 async def on_setup_driver(msg, data=None):
     """Handle the setup flow from the remote UI."""
 
