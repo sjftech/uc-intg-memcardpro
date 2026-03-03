@@ -10,10 +10,9 @@
   },
   "developer": {
     "name": "Community",
-    "url": "https://github.com/8bitmods/memcard-pro"
+    "url": "https://github.com/sjftech/uc-intg-memcardpro"
   },
-  "home_page": "https://github.com/8bitmods/memcard-pro",
+  "home_page": "https://github.com/sjftech/uc-intg-memcardpro",
   "release_date": "2026-03-01",
-  "icon": "",
   "port": 10200
 }
