@@ -1,5 +1,5 @@
 {
-  "driver_id": "uc_memcardpro",
+  "driver_id": "memcardpro_intg",
   "version": "1.0.0",
   "min_core_api": "0.20.0",
   "name": {
@@ -15,5 +15,5 @@
   "home_page": "https://github.com/8bitmods/memcard-pro",
   "release_date": "2026-03-01",
   "icon": "",
-  "port": 9097
+  "port": 10200
 }
