@@ -6,57 +6,59 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  PYTHON_VER: 3.11.12-0.3.0
+
 jobs:
   build:
     name: Build aarch64 binary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Fix workspace permissions
-        run: chmod -R 777 .
-
-      - name: Build with PyInstaller (aarch64)
+      - name: Build
         run: |
-          docker run --rm \
-            --platform=linux/arm64 \
-            -v "$PWD":/workspace \
-            docker.io/unfoldedcircle/r2-pyinstaller:3.11.12-0.3.0 \
+          sudo apt-get update && sudo apt-get install -y qemu-system-arm binfmt-support qemu-user-static
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          echo "Starting pyinstaller build"
+          docker run --rm --name builder \
+            --platform=aarch64 \
+            --user=$(id -u):$(id -g) \
+            -v ${GITHUB_WORKSPACE}:/workspace \
+            docker.io/unfoldedcircle/r2-pyinstaller:${PYTHON_VER} \
             bash -c \
-              "cd /workspace && \
-               python -m pip install -r requirements.txt && \
-               pyinstaller --clean --onedir --name intg-memcardpro \
-                 --collect-all zeroconf \
-                 intg-memcardpro/driver.py"
+            "cd /workspace && \
+              python -m pip install -r requirements.txt && \
+              pyinstaller --clean --onedir --name intg-memcardpro --collect-all zeroconf intg-memcardpro/driver.py"
 
-      - name: Package tar.gz
+      - name: Prepare artifacts
+        shell: bash
         run: |
-          VERSION=${GITHUB_REF_NAME:-dev}
           mkdir -p artifacts/bin
-          cp -r dist/intg-memcardpro/* artifacts/bin/
+          mv dist/intg-memcardpro/* artifacts/bin
           mv artifacts/bin/intg-memcardpro artifacts/bin/driver
           cp driver.json artifacts/
-          tar czvf uc-intg-memcardpro-${VERSION}-aarch64.tar.gz -C artifacts .
+          VERSION=${GITHUB_REF_NAME:-dev}
+          echo "ARTIFACT_NAME=uc-intg-memcardpro-${VERSION}-aarch64" >> $GITHUB_ENV
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create upload artifact archive
+        shell: bash
+        run: |
+          tar czvf ${{ env.ARTIFACT_NAME }}.tar.gz -C ${GITHUB_WORKSPACE}/artifacts .
+          ls -lah
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: uc-intg-memcardpro-aarch64
-          path: "uc-intg-memcardpro-*-aarch64.tar.gz"
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}.tar.gz
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: "uc-intg-memcardpro-*-aarch64.tar.gz"
+          files: "*.tar.gz"
           generate_release_notes: true
