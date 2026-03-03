@@ -48,7 +48,8 @@ COVER_ART_URLS = {
 # Setup
 # ---------------------------------------------------------------------------
 
-api = ucapi.IntegrationAPI()
+loop = asyncio.new_event_loop()
+api = ucapi.IntegrationAPI(loop)
 
 # In-memory config: list of {"id": str, "host": str, "name": str}
 _devices: list[dict] = []
@@ -231,32 +232,32 @@ async def _poll_loop() -> None:
 # UCR3 event handlers
 # ---------------------------------------------------------------------------
 
-@api.on(ucapi.Events.CONNECT)
+@api.listens_to(ucapi.Events.CONNECT)
 async def on_connect():
     """Remote connected — push current state of all subscribed entities."""
     _LOGGER.info("Remote connected")
     await api.set_device_state(ucapi.DeviceStates.CONNECTED)
 
 
-@api.on(ucapi.Events.DISCONNECT)
+@api.listens_to(ucapi.Events.DISCONNECT)
 async def on_disconnect():
     """Remote disconnected."""
     _LOGGER.info("Remote disconnected")
 
 
-@api.on(ucapi.Events.ENTER_STANDBY)
+@api.listens_to(ucapi.Events.ENTER_STANDBY)
 async def on_enter_standby():
     """Remote going to standby — nothing special needed for read-only integration."""
     _LOGGER.debug("Remote entering standby")
 
 
-@api.on(ucapi.Events.EXIT_STANDBY)
+@api.listens_to(ucapi.Events.EXIT_STANDBY)
 async def on_exit_standby():
     """Remote waking from standby — state will catch up on next poll."""
     _LOGGER.debug("Remote exiting standby")
 
 
-@api.on(ucapi.Events.SUBSCRIBE_ENTITIES)
+@api.listens_to(ucapi.Events.SUBSCRIBE_ENTITIES)
 async def on_subscribe_entities(entity_ids: list[str]):
     """Remote subscribed to entities — push immediate state."""
     _LOGGER.info("Subscribe entities: %s", entity_ids)
@@ -287,7 +288,7 @@ async def on_subscribe_entities(entity_ids: list[str]):
             )
 
 
-@api.on(ucapi.Events.UNSUBSCRIBE_ENTITIES)
+@api.listens_to(ucapi.Events.UNSUBSCRIBE_ENTITIES)
 async def on_unsubscribe_entities(entity_ids: list[str]):
     _LOGGER.info("Unsubscribe entities: %s", entity_ids)
 
@@ -296,7 +297,7 @@ async def on_unsubscribe_entities(entity_ids: list[str]):
 # Setup flow
 # ---------------------------------------------------------------------------
 
-@api.on(ucapi.Events.SETUP_DRIVER)
+@api.listens_to(ucapi.Events.SETUP_DRIVER)
 async def on_setup_driver(msg, data=None):
     """Handle the setup flow from the remote UI."""
 
@@ -389,11 +390,12 @@ async def main():
     _register_entities()
 
     # Start background polling
-    asyncio.create_task(_poll_loop())
+    loop.create_task(_poll_loop())
 
     # Start the ucapi WebSocket server (blocks until shutdown)
     await api.init("driver.json")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop.run_until_complete(main())
+    loop.run_forever()
