@@ -156,7 +156,7 @@ def _create_entity(device: dict) -> ucapi.MediaPlayer:
     entity_id = _device_id(device["host"])
     return ucapi.MediaPlayer(
         entity_id,
-        {ucapi.Language.EN: device["name"]},
+        {"en": device["name"]},
         [ucapi.MediaPlayerFeatures.MEDIA_TITLE, ucapi.MediaPlayerFeatures.MEDIA_IMAGE_URL],
         {
             ucapi.MediaAttr.STATE: ucapi.MediaPlayerStates.STANDBY,
