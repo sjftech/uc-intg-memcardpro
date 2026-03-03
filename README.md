@@ -24,23 +24,15 @@ Cover art is looked up by game serial — no API key required.
 
 ## Installation
 
-### Step 1 — Build the tar.gz
+### Step 1 — Download the latest release
 
-The integration must be compiled for aarch64 (the remote's CPU). The easiest way is to use the included GitHub Actions workflow:
-
-1. Create a new **public or private GitHub repository**
-2. Push this project to it
-3. Go to **Actions** → **Build and Release** → **Run workflow**
-4. Once complete, download the `uc-intg-memcardpro-aarch64` artifact
-5. Extract the zip — inside is `uc-intg-memcardpro-dev-aarch64.tar.gz`
-
-> **Alternatively**, tag a release (`git tag v1.0.0 && git push --tags`) and the workflow will automatically create a GitHub Release with the tar.gz attached.
+Go to the [Releases](../../releases/latest) page and download `uc-intg-memcardpro-*-aarch64.tar.gz`.
 
 ### Step 2 — Upload to the Remote
 
 1. Open your remote's web interface at `http://your-remote-ip`
 2. Go to **Integrations** → **Add new** → **Install custom**
-3. Select the `uc-intg-memcardpro-*-aarch64.tar.gz` file
+3. Select the downloaded `uc-intg-memcardpro-*-aarch64.tar.gz` file
 4. Wait for the upload to complete
 
 ### Step 3 — Setup
@@ -55,36 +47,5 @@ The integration must be compiled for aarch64 (the remote's CPU). The easiest way
 ## Notes
 
 - The MemCard PRO uses **HTTPS with a self-signed certificate** — the integration ignores certificate errors, which is safe for local network use
-- If your MemCard PROs are on a different subnet (e.g. an IoT VLAN), ensure the remote can reach the devices on port 443
+- If your MemCard PRO is on a different subnet (e.g. an IoT VLAN), ensure the remote can reach the device on port 443
 - Each device gets its own media player entity on the remote
-
-## Building Locally (Advanced)
-
-If you have Docker installed and want to build locally:
-
-```bash
-# Install QEMU for aarch64 emulation (Linux only)
-sudo apt install qemu binfmt-support qemu-user-static
-
-# Build
-docker run --rm \
-  --platform=aarch64 \
-  --user=$(id -u):$(id -g) \
-  -v "$PWD":/workspace \
-  docker.io/unfoldedcircle/r2-pyinstaller:3.11.13 \
-  bash -c \
-    "cd /workspace && \
-     python -m pip install --user -r requirements.txt && \
-     PYTHON_VERSION=\$(python --version | cut -d' ' -f2 | cut -d. -f1,2) && \
-     PYTHONPATH=~/.local/lib/python\${PYTHON_VERSION}/site-packages:\$PYTHONPATH \
-     pyinstaller --clean --onedir --name intg-memcardpro \
-       --collect-all zeroconf \
-       intg-memcardpro/driver.py"
-
-# Package
-mkdir -p artifacts/bin
-cp -r dist/intg-memcardpro/* artifacts/bin/
-mv artifacts/bin/intg-memcardpro artifacts/bin/driver
-cp driver.json artifacts/
-tar czvf uc-intg-memcardpro-aarch64.tar.gz -C artifacts .
-```
