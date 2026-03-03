@@ -14,6 +14,7 @@ import logging
 import os
 import ssl
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 import ucapi
@@ -151,7 +152,17 @@ async def _fetch_device_state(host: str) -> dict | None:
 # Entity management
 # ---------------------------------------------------------------------------
 
-def _create_entity(device: dict) -> ucapi.MediaPlayer:
+async def _cmd_handler(
+    entity: ucapi.media_player.MediaPlayer,
+    cmd_id: str,
+    _params: dict[str, Any] | None,
+    websocket: Any,
+) -> ucapi.StatusCodes:
+    """No-op command handler — MemCard PRO is read-only."""
+    _LOGGER.debug("Ignoring command %s for %s", cmd_id, entity.id)
+    return ucapi.StatusCodes.OK
+
+def _create_entity(device: dict) -> ucapi.media_player.MediaPlayer:
     """Build a MediaPlayer entity for a MemCard PRO device."""
     entity_id = _device_id(device["host"])
     return ucapi.media_player.MediaPlayer(
@@ -163,6 +174,7 @@ def _create_entity(device: dict) -> ucapi.MediaPlayer:
             ucapi.media_player.Attributes.MEDIA_TITLE: "",
             ucapi.media_player.Attributes.MEDIA_IMAGE_URL: "",
         },
+        cmd_handler=_cmd_handler
     )
 
 
