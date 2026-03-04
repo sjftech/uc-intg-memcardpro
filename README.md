@@ -1,8 +1,8 @@
-# MemCard PRO — Unfolded Circle Remote 3 Integration
+# MemCard PRO — Unfolded Circle Remote 2/3 Integration
 
-An integration driver for the [Unfolded Circle Remote 3](https://www.unfoldedcircle.com/) that displays the currently loaded game and cover art from [MemCard PRO](https://8bitmods.com) devices.
+An integration driver for the [Unfolded Circle Remote 2/3](https://www.unfoldedcircle.com/) that displays the currently loaded game and cover art from [MemCard PRO](https://8bitmods.com) devices.
 
-Supports all three MemCard PRO variants:
+Supports the below three MemCard PRO variants:
 
 | Device | Console | Cover Art Source |
 |---|---|---|
@@ -18,7 +18,7 @@ Cover art is looked up by game serial — no API key required.
 - Displays cover art sourced from serial-based GitHub repos
 - Supports multiple devices (add each one separately during setup)
 - Polls every 10 seconds for the current game
-- Runs directly on the UCR3 remote — no external server needed
+- Runs directly on the UCR2/3 remote — no external server needed
 
 ---
 
